@@ -119,6 +119,9 @@ public:
   void print();
 };
 
+// Function signature for AI to implement.
+// Given current state of the board, and a piece to place, return the move to play.
+// DropMove is just a tuple of column and rotation.
 using PlayerFunc = std::function<DropMove(const Board &, const PieceSet &)>;
 
 class Game {
