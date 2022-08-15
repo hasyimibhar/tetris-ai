@@ -18,9 +18,9 @@ struct Evaluation {
   }
 };
 
-Evaluation evaluateBoard(const Board &board, const PieceSet &pieceSet, DropMove move) {
+Evaluation evaluateBoard(const Board &board, PieceType piece, DropMove move) {
   auto updated = board;
-  auto overallMove = updated.playMove(pieceSet, move);
+  auto overallMove = updated.playMove(piece, move);
   if (!overallMove.valid()) return Evaluation::invalid();
 
   auto score =
@@ -34,17 +34,16 @@ Evaluation evaluateBoard(const Board &board, const PieceSet &pieceSet, DropMove 
   return Evaluation(score);
 }
 
-DropMove elTetris(const Board &board, const PieceSet &pieceSet) {
+DropMove elTetris(const Board &board, PieceType piece) {
   double bestScore = -10000000000000000.0;
   auto bestMove = DropMove::invalid();
 
   // Serial
-  for (int rot = 0; rot < pieceSet.rotations.size(); rot++) {
-    const auto &piece = pieceSet.rotations[rot];
-    for (int col = 0; col < board.width()-piece.width+1; col++) {
+  for (int rot = 0; rot < pieceRotations.at(piece); rot++) {
+    for (int col = 0; col < board.width()-pieceSizes.at({piece, rot}).first+1; col++) {
       auto move = DropMove(col, rot);
 
-      auto eval = evaluateBoard(board, pieceSet, move);
+      auto eval = evaluateBoard(board, piece, move);
       if (!eval.valid) continue;
 
       if (eval.score > bestScore) {
@@ -108,7 +107,8 @@ DropMove elTetris(const Board &board, const PieceSet &pieceSet) {
 }
 
 double landingHeight(const Board &board, Move move) {
-  return board.height()-move.row + ((move.pieceHeight-1)/2.0);
+  int pieceHeight = pieceSizes.at({move.piece, move.rot}).second;
+  return board.height()-move.row + ((pieceHeight-1)/2.0);
 }
 
 int rowTransitions(const Board &board) {
@@ -118,7 +118,7 @@ int rowTransitions(const Board &board) {
 
   for (int i = board.height()-1; i >= 0; i--) {
     for (int j = 0; j < board.width(); j++) {
-      current = board.getCell(i, j);
+      current = board.cell(i, j);
       if (current != last) transitions++;
 
       last = current;
@@ -137,7 +137,7 @@ int colTransitions(const Board &board) {
 
   for (int j = 0; j < board.width(); j++) {
     for (int i = board.height()-1; i >= 0; i--) {
-      int current = board.getCell(i, j);
+      int current = board.cell(i, j);
       if (current != last) transitions++;
 
       last = current;
@@ -173,14 +173,14 @@ int wellSums(const Board &board) {
 
   for (int j = 1; j < board.width()-1; j++) {
     for (int i = 0; i < board.height(); i++) {
-      if (board.getCell(i, j) == 0 &&
-          board.getCell(i, j-1) == 1 &&
-          board.getCell(i, j+1) == 1) {
+      if (board.cell(i, j) == 0 &&
+          board.cell(i, j-1) == 1 &&
+          board.cell(i, j+1) == 1) {
 
           sums++;
 
           // for (int k = i+1; k < board.height(); k++) {
-          //   if (board.getCell(k, j) == 0) sums++;
+          //   if (board.cell(k, j) == 0) sums++;
           //   else break;
           // }
       }
@@ -188,22 +188,22 @@ int wellSums(const Board &board) {
   }
 
   for (int i = 0; i < board.height(); i++) {
-    if (board.getCell(i, 0) == 0 && board.getCell(i, 1) == 1) {
+    if (board.cell(i, 0) == 0 && board.cell(i, 1) == 1) {
       sums++;
 
       // for (int k = i+1; k < board.height(); k++) {
-      //   if (board.getCell(k, 0) == 0) sums++;
+      //   if (board.cell(k, 0) == 0) sums++;
       //   else break;
       // }
     }
   }
 
   for (int i = 0; i < board.height(); i++) {
-    if (board.getCell(i, board.width()-1) == 0 && board.getCell(i, board.width()-2) == 1) {
+    if (board.cell(i, board.width()-1) == 0 && board.cell(i, board.width()-2) == 1) {
       sums++;
 
       // for (int k = i+1; k < board.height(); k++) {
-      //   if (board.getCell(k, board.width()-1) == 0) sums++;
+      //   if (board.cell(k, board.width()-1) == 0) sums++;
       //   else break;
       // }
     }

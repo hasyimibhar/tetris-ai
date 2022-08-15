@@ -8,10 +8,187 @@
 #include <functional>
 #include <random>
 #include <algorithm>
-#include <future>
-#include <thread>
-#include <cstdlib>
+#include <map>
 #include <iostream>
+
+struct Piece {
+  std::vector<uint16_t> array;
+  int width, height;
+
+  Piece(const std::vector<uint16_t> &array, int width, int height)
+    : array(array), width(width), height(height) {}
+
+  Piece(const Piece &p) = default;
+  Piece(Piece &&p) = default;
+
+  Piece& operator=(Piece other) {
+    array.assign(other.array.begin(), other.array.end());
+    width = other.width;
+    height = other.height;
+    return *this;
+  }
+};
+
+struct PieceSet {
+  std::string name;
+  std::vector<Piece> rotations;
+
+  PieceSet() {}
+
+  PieceSet(
+      const std::string &name, 
+      const std::vector<Piece> &rotations)
+    : name(name), rotations(rotations) {}
+
+  PieceSet(const PieceSet &p) = default;
+  PieceSet(PieceSet &&p) = default;
+
+  PieceSet& operator=(const PieceSet &other) {
+    name = other.name;
+    rotations.assign(other.rotations.begin(), other.rotations.end());
+    return *this;
+  }
+
+  static PieceSet I();
+  static PieceSet O();
+  static PieceSet T();
+  static PieceSet L();
+  static PieceSet J();
+  static PieceSet S();
+  static PieceSet Z();
+};
+
+const std::map<PieceType, PieceSet> pieceSets = {
+  { PieceType::I, PieceSet::I() },
+  { PieceType::O, PieceSet::O() },
+  { PieceType::T, PieceSet::T() },
+  { PieceType::L, PieceSet::L() },
+  { PieceType::J, PieceSet::J() },
+  { PieceType::S, PieceSet::S() },
+  { PieceType::Z, PieceSet::Z() },
+};
+
+int Board::getDropRow(PieceType pieceType, DropMove move) const {
+  const auto &piece = pieceSets.at(pieceType).rotations[move.rot];
+
+  int startRow = lastEmptyRow-piece.height+1 >= 0 ? lastEmptyRow-piece.height+1 : 0;
+
+  // for (int row = 0; row < height-piece.height+1; row++) {
+  for (int row = startRow; row < _height-piece.height+1; row++) {
+    for (int i = 0; i < piece.height; i++) {
+      if ((array[row + i] & (piece.array[i] << move.col)) != 0) return row-1;
+    }
+  }
+  return _height-piece.height;
+}
+
+int Board::dropPiece(PieceType pieceType, DropMove move) {
+  auto dropRow = getDropRow(pieceType, move);
+  if (dropRow < 0) return -1;
+
+  const auto &piece = pieceSets.at(pieceType).rotations[move.rot];
+
+  for (int i = 0; i < piece.height; i++) {
+    array[dropRow + i] |= (piece.array[i] << move.col);
+  }
+
+  return dropRow;
+}
+
+int Board::clearLines() {
+  int full = (1 << _width)-1;
+  int linesCleared = 0;
+
+  // Single pass, but requires copy
+
+  std::array<uint16_t, 20> updated = {};
+  int current = _height-1;
+
+  for (int i = _height-1; i >= 0; i--) {
+    if (array[i] == full) {
+      linesCleared++;
+      continue;
+    }
+
+    updated[current] = array[i];
+    current--;
+  }
+
+  array = std::move(updated);
+
+  lastEmptyRow = _height-1;
+  while (lastEmptyRow >= 0 && array[lastEmptyRow] > 0) lastEmptyRow--;
+
+  // Avoid copying
+
+  // for (int i = 0; i < height; i++) {
+  //   if (array[i] < full) continue;
+
+  //   linesCleared++;
+  //   for (int j = i; j > 0; j--) {
+  //     array[j] = array[j-1];
+  //   }
+  //   array[0] = 0;
+  // }
+
+  return linesCleared;
+}
+
+Move Board::playMove(PieceType pieceType, DropMove move) {
+  const auto &pieceSet = pieceSets.at(pieceType);
+  if (move.rot >= pieceSet.rotations.size()) return Move::invalid();
+
+  const auto &piece = pieceSet.rotations[move.rot];
+  if (move.col + piece.width > _width) return Move::invalid();
+
+  auto dropRow = dropPiece(pieceType, move);
+  if (dropRow < 0) return Move::invalid();
+
+  auto linesCleared = clearLines();
+  return Move(pieceType, dropRow, move.col, move.rot, linesCleared);
+}
+
+void Board::print() {
+  for (int i = 0; i < _height; i++) {
+    for (int j = 0; j < _width; j++) {
+      auto c = cell(i, j);
+      std::cout << (c == 1 ? 'O' : '.');
+    }
+    std::cout << std::endl;
+  }
+}
+
+Game::TickResult Game::tick(PlayerFunc player) {
+  auto piece = nextPiece();
+
+  // Create a copy to avoid cheating
+  // auto boardCopy = board;
+  // auto dropMove = player(boardCopy, piece);
+
+  auto dropMove = player(board, piece);
+
+  if (!dropMove.valid()) {
+    return GameOver;
+  }
+
+  auto move = board.playMove(piece, dropMove);
+  if (!move.valid()) {
+    return GameOver;
+  }
+
+  lastMove = move;
+  linesCleared += lastMove.linesCleared;
+  pieces++;
+
+  return Ok;
+}
+
+void Game::print() {
+  std::cout << "pieces=" << pieces;
+  std::cout << ", lines cleared=" << linesCleared << std::endl;
+
+  board.print();
+}
 
 PieceSet PieceSet::I() {
   return PieceSet(
@@ -183,142 +360,4 @@ PieceSet PieceSet::Z() {
         },
         2, 3),
     });
-}
-
-int Board::getDropRow(const Piece &piece, int col) const {
-  int startRow = lastEmptyRow-piece.height+1 >= 0 ? lastEmptyRow-piece.height+1 : 0;
-
-  // for (int row = 0; row < height-piece.height+1; row++) {
-  for (int row = startRow; row < _height-piece.height+1; row++) {
-    for (int i = 0; i < piece.height; i++) {
-      if ((array[row + i] & (piece.array[i] << col)) != 0) return row-1;
-    }
-  }
-  return _height-piece.height;
-}
-
-int Board::dropPiece(const Piece &piece, int col) {
-  auto dropRow = getDropRow(piece, col);
-  if (dropRow < 0) return -1;
-
-  for (int i = 0; i < piece.height; i++) {
-    array[dropRow + i] |= (piece.array[i] << col);
-  }
-
-  return dropRow;
-}
-
-int Board::clearLines() {
-  int full = (1 << _width)-1;
-  int linesCleared = 0;
-
-  // Single pass, but requires copy
-
-  std::array<uint16_t, 20> updated = {};
-  int current = _height-1;
-
-  for (int i = _height-1; i >= 0; i--) {
-    if (array[i] == full) {
-      linesCleared++;
-      continue;
-    }
-
-    updated[current] = array[i];
-    current--;
-  }
-
-  array = std::move(updated);
-
-  lastEmptyRow = _height-1;
-  while (lastEmptyRow >= 0 && array[lastEmptyRow] > 0) lastEmptyRow--;
-
-  // Avoid copying
-
-  // for (int i = 0; i < height; i++) {
-  //   if (array[i] < full) continue;
-
-  //   linesCleared++;
-  //   for (int j = i; j > 0; j--) {
-  //     array[j] = array[j-1];
-  //   }
-  //   array[0] = 0;
-  // }
-
-  return linesCleared;
-}
-
-Move Board::playMove(const PieceSet &pieceSet, DropMove move) {
-  if (move.rot >= pieceSet.rotations.size()) return Move::invalid();
-
-  const auto &piece = pieceSet.rotations[move.rot];
-  if (move.col + piece.width > _width) return Move::invalid();
-
-  auto dropRow = dropPiece(piece, move.col);
-  if (dropRow < 0) return Move::invalid();
-
-  auto linesCleared = clearLines();
-  return Move(dropRow, move.col, move.rot, linesCleared, piece.height);
-}
-
-void Board::print() {
-  for (int i = 0; i < _height; i++) {
-    for (int j = 0; j < _width; j++) {
-      auto c = getCell(i, j);
-      std::cout << (c == 1 ? 'O' : '.');
-    }
-    std::cout << std::endl;
-  }
-}
-
-const std::array<PieceSet, 7> pieceSets = {
-  PieceSet::I(), PieceSet::O(), PieceSet::T(),
-  PieceSet::L(), PieceSet::J(),
-  PieceSet::S(), PieceSet::Z(),
-};
-
-Game::TickResult Game::tick(PlayerFunc player) {
-  if (bagIndex == 7) {
-    generatePieces();
-  }
-  const auto &pieceSet = getNextPiece();
-
-  // Create a copy to avoid cheating
-  // auto boardCopy = board;
-  // auto pieceSetCopy = pieceSet;
-  // auto dropMove = player(boardCopy, pieceSetCopy);
-
-  auto dropMove = player(board, pieceSet);
-
-  if (!dropMove.valid()) {
-    return GameOver;
-  }
-
-  auto move = board.playMove(pieceSet, dropMove);
-  if (!move.valid()) {
-    return GameOver;
-  }
-
-  lastMove = move;
-  linesCleared += lastMove.linesCleared;
-  pieces++;
-  bagIndex++;
-
-  return Ok;
-}
-
-void Game::generatePieces() {
-  for (int i = 0; i < indices.size(); i++) indices[i] = i;
-  std::shuffle(indices.begin(), indices.end(), rng);
-  bagIndex = 0;
-}
-
-const PieceSet &Game::getNextPiece() {
-  return pieceSets[bagIndex];
-}
-
-void Game::print() {
-  std::cout << "pieces=" << pieces;
-  std::cout << ", lines cleared=" << linesCleared << std::endl;
-
-  board.print();
 }

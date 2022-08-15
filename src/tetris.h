@@ -6,53 +6,57 @@
 #include <random>
 #include <string>
 #include <functional>
+#include <map>
 
-struct Piece {
-  std::vector<uint16_t> array;
-  int width, height;
-
-  Piece(const std::vector<uint16_t> &array, int width, int height)
-    : array(array), width(width), height(height) {}
-
-  Piece(const Piece &p) = default;
-  Piece(Piece &&p) = default;
-
-  Piece& operator=(Piece other) {
-    array.assign(other.array.begin(), other.array.end());
-    width = other.width;
-    height = other.height;
-    return *this;
-  }
+enum PieceType {
+  I = 0,
+  O, T,
+  L, J,
+  S, Z,
 };
 
-struct PieceSet {
-  std::string name;
-  std::vector<Piece> rotations;
+using PieceGenerator = std::function<PieceType()>;
+using PieceRandomizer = std::function<PieceGenerator(int seed)>;
 
-  PieceSet() {}
-
-  PieceSet(
-      const std::string &name, 
-      const std::vector<Piece> &rotations)
-    : name(name), rotations(rotations) {}
-
-  PieceSet(const PieceSet &p) = default;
-  PieceSet(PieceSet &&p) = default;
-
-  PieceSet& operator=(const PieceSet &other) {
-    name = other.name;
-    rotations.assign(other.rotations.begin(), other.rotations.end());
-    return *this;
-  }
-
-  static PieceSet I();
-  static PieceSet O();
-  static PieceSet T();
-  static PieceSet L();
-  static PieceSet J();
-  static PieceSet S();
-  static PieceSet Z();
+const std::map<PieceType, int> pieceRotations = {
+  { PieceType::I, 2 },
+  { PieceType::O, 1 },
+  { PieceType::T, 4 },
+  { PieceType::L, 4 },
+  { PieceType::J, 4 },
+  { PieceType::S, 2 },
+  { PieceType::Z, 2 },
 };
+
+const std::map<std::pair<PieceType, int>, std::pair<int, int>> pieceSizes = {
+  { { PieceType::I, 0 }, {4, 1} },
+  { { PieceType::I, 1 }, {1, 4} },
+
+  { { PieceType::O, 0 }, {2, 2} },
+
+  { { PieceType::T, 0 }, {3, 2} },
+  { { PieceType::T, 1 }, {2, 3} },
+  { { PieceType::T, 2 }, {3, 2} },
+  { { PieceType::T, 3 }, {2, 3} },
+
+  { { PieceType::L, 0 }, {3, 2} },
+  { { PieceType::L, 1 }, {2, 3} },
+  { { PieceType::L, 2 }, {3, 2} },
+  { { PieceType::L, 3 }, {2, 3} },
+
+  { { PieceType::J, 0 }, {3, 2} },
+  { { PieceType::J, 1 }, {2, 3} },
+  { { PieceType::J, 2 }, {3, 2} },
+  { { PieceType::J, 3 }, {2, 3} },
+
+  { { PieceType::S, 0 }, {3, 2} },
+  { { PieceType::S, 1 }, {2, 3} },
+
+  { { PieceType::Z, 0 }, {3, 2} },
+  { { PieceType::Z, 1 }, {2, 3} },
+};
+
+std::pair<int, int> pieceSize(PieceType p, int rot);
 
 struct DropMove {
   int col, rot;
@@ -69,14 +73,15 @@ struct DropMove {
 };
 
 struct Move {
+  PieceType piece;
   int row, col, rot, linesCleared, pieceHeight;
 
-  Move(): row(-1), col(-1), rot(-1), linesCleared(0), pieceHeight(0) {}
-  Move(int row, int col, int rot, int linesCleared, int pieceHeight)
-    : row(row), col(col), rot(rot), linesCleared(linesCleared), pieceHeight(pieceHeight) {}
+  Move(): piece(PieceType::I), row(-1), col(-1), rot(-1), linesCleared(0) {}
+  Move(PieceType piece, int row, int col, int rot, int linesCleared)
+    : piece(piece), row(row), col(col), rot(rot), linesCleared(linesCleared) {}
 
   static Move invalid() {
-    return Move(-1, -1, -1, 0, 0);
+    return Move(PieceType::I, -1, -1, -1, 0);
   }
 
   bool valid() const {
@@ -90,8 +95,8 @@ private:
   int _width, _height;
   int lastEmptyRow;
 
-  int getDropRow(const Piece &piece, int col) const;
-  int dropPiece(const Piece &piece, int col);
+  int getDropRow(PieceType piece, DropMove move) const;
+  int dropPiece(PieceType piece, DropMove move);
   int clearLines();
 
 public:
@@ -109,40 +114,37 @@ public:
   inline int width() const { return _width; }
   inline int height() const { return _height; }
 
-  inline const int getCell(int row, int col) const {
+  inline const int cell(int row, int col) const {
     return (array[row] >> col) & 1;
   }
 
   inline uint16_t row(int i) const { return array[i]; }
 
-  Move playMove(const PieceSet &pieceSet, DropMove move);
+  Move playMove(PieceType piece, DropMove move);
   void print();
 };
 
 // Function signature for AI to implement.
 // Given current state of the board, and a piece to place, return the move to play.
 // DropMove is just a tuple of column and rotation.
-using PlayerFunc = std::function<DropMove(const Board &, const PieceSet &)>;
+using PlayerFunc = std::function<DropMove(const Board &, PieceType)>;
 
 class Game {
 private:
   std::default_random_engine rng;
   int seed;
   Board board;
-  int bagIndex;
   int linesCleared;
   int pieces;
   Move lastMove;
-  std::array<int, 7> indices;
-
-  void generatePieces();
-  const PieceSet &getNextPiece();
+  PieceGenerator nextPiece;
 
 public:
   enum TickResult { Ok, GameOver };
 
-  Game(int seed):
-    rng(std::default_random_engine(seed)), seed(seed), linesCleared(0), pieces(0), indices({0, 1, 2, 3, 4, 5, 6}), bagIndex(7) {}
+  Game(int seed, PieceRandomizer randomizer):
+    rng(std::default_random_engine(seed)), seed(seed), nextPiece(randomizer(seed)),
+    linesCleared(0), pieces(0) {}
 
   TickResult tick(PlayerFunc player);
   void print();

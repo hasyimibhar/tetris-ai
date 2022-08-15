@@ -1,6 +1,7 @@
 #include <iostream>
 #include "tetris.h"
 #include "eltetris.h"
+#include "randomizers.h"
 
 int main(int argc, char **argv) {
   int seed = 0;
@@ -10,7 +11,7 @@ int main(int argc, char **argv) {
 
   std::cout << "seed=" << seed << std::endl;
 
-  Game game (seed);
+  Game game (seed, sevenBag);
 
   // auto player = dummy;
 

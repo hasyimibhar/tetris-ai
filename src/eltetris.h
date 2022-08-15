@@ -3,6 +3,6 @@
 
 #include "tetris.h"
 
-DropMove elTetris(const Board &board, const PieceSet &pieceSet);
+DropMove elTetris(const Board &board, PieceType piece);
 
 #endif
