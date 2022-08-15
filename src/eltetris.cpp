@@ -179,10 +179,10 @@ int wellSums(const Board &board) {
 
           sums++;
 
-          // for (int k = i+1; k < board.height(); k++) {
-          //   if (board.cell(k, j) == 0) sums++;
-          //   else break;
-          // }
+          for (int k = i+1; k < board.height(); k++) {
+            if (board.cell(k, j) == 0) sums++;
+            else break;
+          }
       }
     }
   }
@@ -191,10 +191,10 @@ int wellSums(const Board &board) {
     if (board.cell(i, 0) == 0 && board.cell(i, 1) == 1) {
       sums++;
 
-      // for (int k = i+1; k < board.height(); k++) {
-      //   if (board.cell(k, 0) == 0) sums++;
-      //   else break;
-      // }
+      for (int k = i+1; k < board.height(); k++) {
+        if (board.cell(k, 0) == 0) sums++;
+        else break;
+      }
     }
   }
 
@@ -202,10 +202,10 @@ int wellSums(const Board &board) {
     if (board.cell(i, board.width()-1) == 0 && board.cell(i, board.width()-2) == 1) {
       sums++;
 
-      // for (int k = i+1; k < board.height(); k++) {
-      //   if (board.cell(k, board.width()-1) == 0) sums++;
-      //   else break;
-      // }
+      for (int k = i+1; k < board.height(); k++) {
+        if (board.cell(k, board.width()-1) == 0) sums++;
+        else break;
+      }
     }
   }
 

@@ -3,6 +3,7 @@
 
 #include "tetris.h"
 
+PieceGenerator original(int seed);
 PieceGenerator sevenBag(int seed);
 
 #endif

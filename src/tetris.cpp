@@ -160,6 +160,7 @@ void Board::print() {
 
 Game::TickResult Game::tick(PlayerFunc player) {
   auto piece = nextPiece();
+  // std::cout << piece << std::endl;
 
   // Create a copy to avoid cheating
   // auto boardCopy = board;

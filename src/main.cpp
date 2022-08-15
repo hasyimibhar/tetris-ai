@@ -11,7 +11,7 @@ int main(int argc, char **argv) {
 
   std::cout << "seed=" << seed << std::endl;
 
-  Game game (seed, sevenBag);
+  Game game (seed, original);
 
   // auto player = dummy;
 

@@ -56,8 +56,6 @@ const std::map<std::pair<PieceType, int>, std::pair<int, int>> pieceSizes = {
   { { PieceType::Z, 1 }, {2, 3} },
 };
 
-std::pair<int, int> pieceSize(PieceType p, int rot);
-
 struct DropMove {
   int col, rot;
 
@@ -104,13 +102,6 @@ public:
   Board(const Board &b) = default;
   Board(Board &&b) = default;
 
-  Board& operator=(Board other) {
-    array = other.array;
-    _width = other._width;
-    _height = other._height;
-    return *this;
-  }
-
   inline int width() const { return _width; }
   inline int height() const { return _height; }
 
@@ -129,6 +120,8 @@ public:
 // DropMove is just a tuple of column and rotation.
 using PlayerFunc = std::function<DropMove(const Board &, PieceType)>;
 
+// Game is deterministic state machine.
+// Given the same seed and randomizer, it should always produce the same sequence of pieces.
 class Game {
 private:
   std::default_random_engine rng;
