@@ -11,7 +11,7 @@ Tetris varies a lot between implementations. The following rules are used:
 - 10x20 board
 - 7-bag random generator with uniform piece distribution
 - 1 piece at a time, 0 piece lookahead, no holding piece
-- Piece drops straight down, so moves like T-spin, L-spin, and wall kicks are not allowed
+- Piece drops straight down, so moves like T-spin, L-spin, and wall kicks are not allowed. Essentially the game is turn-based and not "real-time".
 - Piece starts from row 0 (some implementations use hidden row 21-23)
 - Game is over when piece overflows row 0
 
