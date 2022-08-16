@@ -23,26 +23,37 @@ Compile:
 $ make
 ```
 
-Then run (`123` is the RNG seed used to generate the pieces):
+```
+Usage: tetris [options]
+
+Optional arguments:
+-h --help       	shows help message and exits [default: false]
+-v --version    	prints version information and exits [default: false]
+-a --ai         	AI to use [default: "eltetris"]
+-r --randomizer 	randomizer to use [default: "7bag"]
+-s --seed       	RNG seed [default: 0]
+-p --pieces     	Number of pieces to generate [default: 1000000]
+```
+
+Example:
 
 ```sh
-$ bin/tetris 123
-```
-
-Sample output:
-
-```
+$ bin/tetris -a eltetris -randomizer 7bag -s 123 -p 100000
+ai=eltetris
+randomizer=7bag
 seed=123
-100000
-200000
-300000
-400000
-500000
-600000
-700000
-800000
-900000
-pieces=1000000, lines cleared=399998
+pieces=100000
+
+10000
+20000
+30000
+40000
+50000
+60000
+70000
+80000
+90000
+pieces=100000, lines cleared=39999
 ..........
 ..........
 ..........
@@ -59,8 +70,8 @@ pieces=1000000, lines cleared=399998
 ..........
 ..........
 ..........
-....O.....
+..........
+..........
 .O..OO....
-OOOOOOOO..
-OOOOOOOO..
+OOOOOO.O..
 ```
