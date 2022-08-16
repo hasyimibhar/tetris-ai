@@ -101,20 +101,21 @@ int Board::clearLines() {
 
   // Single pass, but requires copy
 
-  std::array<uint16_t, 20> updated = {};
   int current = _height-1;
 
   for (int i = _height-1; i >= 0; i--) {
+    if (array[i] == 0) break;
     if (array[i] == full) {
       linesCleared++;
       continue;
     }
 
-    updated[current] = array[i];
+    arrayCopy[current] = array[i];
     current--;
   }
+  while (current >= 0) arrayCopy[current--] = 0;
 
-  array = std::move(updated);
+  std::swap(array, arrayCopy);
 
   lastEmptyRow = _height-1;
   while (lastEmptyRow >= 0 && array[lastEmptyRow] > 0) lastEmptyRow--;

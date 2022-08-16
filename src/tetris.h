@@ -89,7 +89,7 @@ struct Move {
 
 class Board {
 private:
-  std::array<uint16_t, 20> array;
+  std::array<uint16_t, 20> array, arrayCopy;
   int _width, _height;
   int lastEmptyRow;
 
