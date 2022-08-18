@@ -2,13 +2,16 @@
 #include <map>
 
 #include "tetris.h"
-#include "eltetris.h"
 #include "randomizers.h"
 #include "argparse.hpp"
+
+#include "eltetris.h"
+#include "yiyuan.h"
 
 int main(int argc, char **argv) {
   const std::map<std::string, PlayerFunc> ai = {
     { "eltetris", elTetris },
+    { "yiyuan", yiyuan },
   };
 
   const std::map<std::string, PieceRandomizer> randomizers = {
@@ -74,8 +77,17 @@ int main(int argc, char **argv) {
 
   for (int i = 0; i < pieces; i++) {
     if (game.tick(player) == Game::GameOver) break;
-    if (i > 0 && i % step == 0) {
-      std::cout << i << std::endl;
+    const auto &stats = game.stats();
+    if (stats.pieces > 0 && stats.pieces % step == 0) {
+      std::cout << "pieces=" << stats.pieces;
+      std::cout << ",lines_cleared=" << stats.linesCleared;
+
+      std::cout << ",piece_frequency=";
+      for (int p = 0; p < 7; p++) {
+        std::cout << stats.pieceFrequency.at((PieceType)p) << ",";
+      }
+
+      std::cout << std::endl;
     }
   }
 

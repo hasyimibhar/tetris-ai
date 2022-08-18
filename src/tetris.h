@@ -115,10 +115,24 @@ public:
   void print();
 };
 
+void enumerateMoves(
+    const Board &board,
+    PieceType pieceType,
+    std::function<void(DropMove)>);
+
+
 // Function signature for AI to implement.
 // Given current state of the board, and a piece to place, return the move to play.
 // DropMove is just a tuple of column and rotation.
 using PlayerFunc = std::function<DropMove(const Board &, PieceType)>;
+
+struct GameStats {
+  int pieces;
+  int linesCleared;
+  std::map<PieceType, int> pieceFrequency;
+
+  GameStats(): pieces(0), linesCleared(0) {}
+};
 
 // Game is deterministic state machine.
 // Given the same seed and randomizer, it should always produce the same sequence of pieces.
@@ -127,17 +141,17 @@ private:
   std::default_random_engine rng;
   int seed;
   Board board;
-  int linesCleared;
-  int pieces;
   Move lastMove;
+  GameStats _stats;
   PieceGenerator nextPiece;
 
 public:
   enum TickResult { Ok, GameOver };
 
   Game(int seed, PieceRandomizer randomizer):
-    rng(std::default_random_engine(seed)), seed(seed), nextPiece(randomizer(seed)),
-    linesCleared(0), pieces(0) {}
+    rng(std::default_random_engine(seed)), seed(seed), nextPiece(randomizer(seed)) {}
+
+  const GameStats &stats() const { return _stats; }
 
   TickResult tick(PlayerFunc player);
   void print();

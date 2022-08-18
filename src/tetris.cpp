@@ -68,6 +68,19 @@ const std::map<PieceType, PieceSet> pieceSets = {
   { PieceType::Z, PieceSet::Z() },
 };
 
+void enumerateMoves(
+    const Board &board,
+    PieceType piece,
+    std::function<void(DropMove)> fn) {
+
+  for (int rot = 0; rot < pieceRotations.at(piece); rot++) {
+    for (int col = 0; col < board.width()-pieceSizes.at({piece, rot}).first+1; col++) {
+      fn(DropMove(col, rot));
+    }
+  }
+}
+
+
 int Board::getDropRow(PieceType pieceType, DropMove move) const {
   const auto &piece = pieceSets.at(pieceType).rotations[move.rot];
 
@@ -179,15 +192,17 @@ Game::TickResult Game::tick(PlayerFunc player) {
   }
 
   lastMove = move;
-  linesCleared += lastMove.linesCleared;
-  pieces++;
+
+  _stats.linesCleared += lastMove.linesCleared;
+  _stats.pieces++;
+  _stats.pieceFrequency[piece]++;
 
   return Ok;
 }
 
 void Game::print() {
-  std::cout << "pieces=" << pieces;
-  std::cout << ", lines cleared=" << linesCleared << std::endl;
+  std::cout << "pieces=" << _stats.pieces;
+  std::cout << ", lines cleared=" << _stats.linesCleared << std::endl;
 
   board.print();
 }

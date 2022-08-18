@@ -1,22 +1,11 @@
 #include "eltetris.h"
+#include "ai.h"
 
 double landingHeight(const Board &board, Move move);
 int rowTransitions(const Board &board);
 int colTransitions(const Board &board);
 int holes(const Board &board);
 int wellSums(const Board &board);
-
-struct Evaluation {
-  double score;
-  bool valid;
-
-  Evaluation(double score): score(score), valid(true) {}
-  Evaluation(double score, bool valid): score(score), valid(valid) {}
-
-  static Evaluation invalid() {
-    return Evaluation(0.0, false);
-  }
-};
 
 Evaluation evaluateBoard(const Board &board, PieceType piece, DropMove move) {
   auto updated = board;
@@ -38,20 +27,31 @@ DropMove elTetris(const Board &board, PieceType piece) {
   double bestScore = -10000000000000000.0;
   auto bestMove = DropMove::invalid();
 
+  enumerateMoves(board, piece,
+      [&](DropMove move) {
+        auto eval = evaluateBoard(board, piece, move);
+        if (!eval.valid) return;
+
+        if (eval.score > bestScore) {
+          bestScore = eval.score;
+          bestMove = move;
+        }
+      });
+
   // Serial
-  for (int rot = 0; rot < pieceRotations.at(piece); rot++) {
-    for (int col = 0; col < board.width()-pieceSizes.at({piece, rot}).first+1; col++) {
-      auto move = DropMove(col, rot);
+  // for (int rot = 0; rot < pieceRotations.at(piece); rot++) {
+  //   for (int col = 0; col < board.width()-pieceSizes.at({piece, rot}).first+1; col++) {
+  //     auto move = DropMove(col, rot);
 
-      auto eval = evaluateBoard(board, piece, move);
-      if (!eval.valid) continue;
+  //     auto eval = evaluateBoard(board, piece, move);
+  //     if (!eval.valid) continue;
 
-      if (eval.score > bestScore) {
-        bestScore = eval.score;
-        bestMove = move;
-      }
-    }
-  }
+  //     if (eval.score > bestScore) {
+  //       bestScore = eval.score;
+  //       bestMove = move;
+  //     }
+  //   }
+  // }
 
   // Threads
 
