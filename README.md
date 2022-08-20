@@ -6,7 +6,7 @@ Tetris varies a lot between implementations. The following rules are used:
 
 - 10x20 board
 - 1 piece at a time, 0 piece lookahead, no holding piece
-- Piece drops straight down, so moves like T-spin, L-spin, and wall kicks are not allowed. Essentially the game is turn-based and not "real-time".
+- Hard drops only
 - Piece starts from row 0 (some implementations use hidden row 21-23)
 - Game is over when piece overflows row 0
 
@@ -21,6 +21,16 @@ Tetris varies a lot between implementations. The following rules are used:
 
 - `eltetris`: [El-Tetris](https://imake.ninja/el-tetris-an-improvement-on-pierre-dellacheries-algorithm/)
 - `yiyuan`: [The (Near) Perfect Bot](https://codemyroad.wordpress.com/2013/04/14/tetris-ai-the-near-perfect-player/)
+
+### Implementing your own AI
+
+Each AI implements the following function signature:
+
+```cpp
+DropMove yourOwnAI(const Board &board, PieceType piece) {
+  // do stuff
+}
+```
 
 ## Usage
 
