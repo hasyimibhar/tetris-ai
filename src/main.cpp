@@ -15,7 +15,9 @@ int main(int argc, char **argv) {
   };
 
   const std::map<std::string, PieceRandomizer> randomizers = {
-    { "random", original },
+    { "uniform", uniform},
+    { "nes", nes },
+    { "nesApprox", nesApprox },
     { "7bag", sevenBag },
   };
 
